@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isModerator() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "moderator";
+    }
+
+    // Users can read any profile (needed for the spotlight leaderboard and
+    // uploader names on resource cards) and create/update only their own —
+    // except the "role" field, which only an existing moderator can change.
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && request.resource.data.role == "student";
+      allow update: if isModerator()
+        || (isSignedIn() && request.auth.uid == userId
+            && request.resource.data.role == resource.data.role);
+    }
+
+    // Anyone can read approved resources; only moderators can read pending/
+    // rejected ones (enforced at the query level in the app, backed up here).
+    // Signed-in users can file a new resource for themselves, always as
+    // "pending". Only moderators can change status.
+    match /resources/{resourceId} {
+      allow read: if resource.data.status == "approved" || isModerator();
+      allow create: if isSignedIn()
+        && request.resource.data.uploaderUid == request.auth.uid
+        && request.resource.data.status == "pending";
+      allow update: if isModerator();
+      allow delete: if isModerator();
+    }
+  }
+}
