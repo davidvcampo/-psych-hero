@@ -8,9 +8,9 @@ module.exports = {
     extend: {
       colors: {
         ink: {
-          DEFAULT: "#1B2A4A",
-          800: "#233457",
-          900: "#141F38",
+          DEFAULT: "#1B2E5C",
+          800: "#2A458A",
+          900: "#10203F",
         },
         parchment: {
           DEFAULT: "#F6F1E4",
@@ -19,13 +19,13 @@ module.exports = {
           200: "#ECE3CC",
         },
         gold: {
-          DEFAULT: "#C9A227",
-          light: "#E0C15C",
-          dark: "#9A7B18",
+          DEFAULT: "#C2A94E",
+          light: "#DBC583",
+          dark: "#967D34",
         },
         sky: {
-          DEFAULT: "#A7C4E0",
-          deep: "#5F86B3",
+          DEFAULT: "#A9C8EF",
+          deep: "#5C82BE",
         },
         charcoal: "#22252B",
       },
@@ -35,7 +35,7 @@ module.exports = {
         mono: ["var(--font-ibm-plex-mono)", "monospace"],
       },
       backgroundImage: {
-        "card-punch": "radial-gradient(circle, rgba(27,42,74,0.08) 0%, rgba(27,42,74,0.08) 60%, transparent 61%)",
+        "card-punch": "radial-gradient(circle, rgba(27,46,92,0.08) 0%, rgba(27,46,92,0.08) 60%, transparent 61%)",
       },
     },
   },

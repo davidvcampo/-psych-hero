@@ -10,7 +10,7 @@ export default function ResourceCard({ resource }) {
       href={resource.fileUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative block rounded-sm border border-ink/15 bg-parchment-50 p-5 shadow-[3px_3px_0_0_rgba(27,42,74,0.12)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_rgba(27,42,74,0.18)]"
+      className="group relative block rounded-sm border border-ink/15 bg-parchment-50 p-5 shadow-[3px_3px_0_0_rgba(27,46,92,0.12)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_rgba(27,42,74,0.18)]"
     >
       {/* punch hole, catalog-card signature */}
       <span className="absolute left-3 top-3 h-2.5 w-2.5 rounded-full border border-ink/25 bg-parchment-100" />

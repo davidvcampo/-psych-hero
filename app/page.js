@@ -65,7 +65,7 @@ export default function HomePage() {
             ].map((c) => (
               <div
                 key={c.code}
-                className={`absolute inset-x-6 top-4 ${c.rot} ${c.z} ${c.y} rounded-sm border border-ink/15 bg-parchment-100 p-5 shadow-[4px_4px_0_0_rgba(27,42,74,0.15)]`}
+                className={`absolute inset-x-6 top-4 ${c.rot} ${c.z} ${c.y} rounded-sm border border-ink/15 bg-parchment-100 p-5 shadow-[4px_4px_0_0_rgba(27,46,92,0.15)]`}
               >
                 <span className="absolute left-3 top-3 h-2.5 w-2.5 rounded-full border border-ink/25" />
                 <span className="ml-3 rounded-sm bg-ink px-2 py-0.5 font-mono text-[11px] text-parchment-100">
