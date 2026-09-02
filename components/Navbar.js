@@ -18,7 +18,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-ink-900/10 bg-parchment-50/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
         <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-ink font-display text-lg text-parchment-100">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-gold bg-ink font-display text-lg text-parchment-100">
             Ψ
           </span>
           <span className="font-display text-xl tracking-tight text-ink">
