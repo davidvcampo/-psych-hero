@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SUBJECTS } from "@/lib/constants";
+import SubjectFolders from "@/components/SubjectFolders";
 
 const steps = [
   {
@@ -20,8 +20,6 @@ const steps = [
 ];
 
 export default function HomePage() {
-  const previewSubjects = SUBJECTS.slice(0, 8);
-
   return (
     <div>
       {/* Hero: a catalog drawer of tabbed cards */}
@@ -41,11 +39,17 @@ export default function HomePage() {
               open to every year level.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/browse"
+              <a
+                href="#folders"
                 className="rounded-full bg-ink px-6 py-3 font-body text-sm font-medium text-parchment-100 transition hover:bg-ink-800"
               >
-                Browse the catalog
+                Open a subject folder
+              </a>
+              <Link
+                href="/browse"
+                className="rounded-full border border-ink/25 px-6 py-3 font-body text-sm font-medium text-ink transition hover:border-ink"
+              >
+                Search the catalog
               </Link>
               <Link
                 href="/upload"
@@ -59,9 +63,9 @@ export default function HomePage() {
           {/* Signature visual: a fanned stack of catalog cards */}
           <div className="relative mx-auto h-72 w-full max-w-sm">
             {[
-              { code: "PSYC 103", label: "Abnormal Psych Reviewer", rot: "-rotate-6", z: "z-10", y: "translate-y-6" },
-              { code: "PSYC 106", label: "Stats Formula Sheet", rot: "rotate-2", z: "z-20", y: "translate-y-2" },
-              { code: "GE 1", label: "Understanding the Self Notes", rot: "-rotate-1", z: "z-30", y: "translate-y-0" },
+              { code: "PSY 105", label: "Abnormal Psych Reviewer", rot: "-rotate-6", z: "z-10", y: "translate-y-6" },
+              { code: "PSY 101", label: "Stats Formula Sheet", rot: "rotate-2", z: "z-20", y: "translate-y-2" },
+              { code: "GEC 101", label: "Understanding the Self Notes", rot: "-rotate-1", z: "z-30", y: "translate-y-0" },
             ].map((c) => (
               <div
                 key={c.code}
@@ -81,9 +85,27 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Subject folders */}
+      <section id="folders" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl text-ink">Browse by subject</h2>
+            <p className="mt-2 max-w-lg font-body text-ink/65">
+              Open a folder to see everything filed under that subject.
+            </p>
+          </div>
+          <Link href="/browse" className="font-body text-sm font-medium text-ink/60 hover:text-ink">
+            Rather search? Go to the catalog &rarr;
+          </Link>
+        </div>
+        <div className="mt-10">
+          <SubjectFolders />
+        </div>
+      </section>
+
       {/* Rationale */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
-        <div className="grid gap-10 md:grid-cols-3">
+      <section className="border-t border-ink/10 bg-parchment-50">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-20 md:grid-cols-3">
           <div>
             <h2 className="font-display text-2xl text-ink">Why this exists</h2>
           </div>
@@ -118,26 +140,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Subject preview */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h2 className="font-display text-2xl text-ink">Catalogued by subject</h2>
-          <Link href="/browse" className="font-body text-sm font-medium text-ink/60 hover:text-ink">
-            View the full catalog &rarr;
-          </Link>
-        </div>
-        <div className="mt-8 flex flex-wrap gap-3">
-          {previewSubjects.map((s) => (
-            <span
-              key={s.code}
-              className="rounded-full border border-ink/20 bg-parchment-100 px-4 py-2 font-mono text-xs text-ink/70"
-            >
-              {s.code} &middot; {s.name}
-            </span>
-          ))}
         </div>
       </section>
 

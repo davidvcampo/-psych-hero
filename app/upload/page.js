@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { submitResource } from "@/lib/firestore";
-import { SUBJECTS, RESOURCE_TYPES, YEAR_LEVELS } from "@/lib/constants";
+import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS } from "@/lib/constants";
 import { CLOUDINARY_MAX_FILE_BYTES } from "@/lib/cloudinary";
 
 export default function UploadPage() {
@@ -146,10 +146,14 @@ export default function UploadPage() {
               onChange={(e) => setSubjectCode(e.target.value)}
               className="mt-1 w-full rounded-sm border border-ink/20 bg-parchment-50 px-3 py-2 font-body text-ink outline-none focus:border-ink"
             >
-              {SUBJECTS.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.code} &middot; {s.name}
-                </option>
+              {TRACKS.map((t) => (
+                <optgroup key={t.id} label={t.title}>
+                  {SUBJECTS.filter((s) => s.track === t.id).map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.code} &middot; {s.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>

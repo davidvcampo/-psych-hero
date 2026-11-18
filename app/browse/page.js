@@ -1,17 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { subscribeApprovedResources } from "@/lib/firestore";
-import { SUBJECTS, RESOURCE_TYPES, YEAR_LEVELS } from "@/lib/constants";
+import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS } from "@/lib/constants";
 import ResourceCard from "@/components/ResourceCard";
 
-export default function BrowsePage() {
+function BrowseContent() {
+  const searchParams = useSearchParams();
+  const subjectParam = searchParams.get("subject") || "all";
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [track, setTrack] = useState("all");
+  const [subject, setSubject] = useState(subjectParam);
   const [yearLevel, setYearLevel] = useState("all");
   const [resourceType, setResourceType] = useState("all");
+
+  // Opening a folder from the homepage arrives as /browse?subject=PSY%20100
+  useEffect(() => {
+    setSubject(subjectParam);
+  }, [subjectParam]);
 
   useEffect(() => {
     const unsub = subscribeApprovedResources((docs) => {
@@ -23,8 +32,7 @@ export default function BrowsePage() {
 
   const filtered = useMemo(() => {
     return resources.filter((r) => {
-      const subj = SUBJECTS.find((s) => s.code === r.subjectCode);
-      if (track !== "all" && subj?.track !== track) return false;
+      if (subject !== "all" && r.subjectCode !== subject) return false;
       if (yearLevel !== "all" && r.yearLevel !== yearLevel) return false;
       if (resourceType !== "all" && r.resourceType !== resourceType) return false;
       if (search) {
@@ -33,15 +41,22 @@ export default function BrowsePage() {
       }
       return true;
     });
-  }, [resources, track, yearLevel, resourceType, search]);
+  }, [resources, subject, yearLevel, resourceType, search]);
+
+  const selected = SUBJECTS.find((s) => s.code === subject);
 
   return (
     <div className="mx-auto max-w-6xl px-5 py-14">
-      <span className="font-mono text-xs text-ink/50">THE CATALOG</span>
-      <h1 className="mt-2 font-display text-3xl text-ink">Browse resources</h1>
+      <Link href="/#folders" className="font-body text-sm text-ink/60 hover:text-ink">
+        &larr; All subject folders
+      </Link>
+      <h1 className="mt-3 font-display text-3xl text-ink">
+        {selected ? `${selected.code} · ${selected.name}` : "Browse resources"}
+      </h1>
       <p className="mt-2 max-w-lg font-body text-ink/60">
-        Every card here has passed moderation. Search by title or subject, or
-        narrow it down with the filters.
+        {selected
+          ? "Everything filed under this subject. Use the filters to narrow it down."
+          : "Every card here has passed moderation. Search by title or subject, or narrow it down with the filters."}
       </p>
 
       {/* Filters */}
@@ -54,13 +69,20 @@ export default function BrowsePage() {
           className="rounded-sm border border-ink/20 bg-parchment-50 px-3 py-2 font-body text-sm text-ink outline-none focus:border-ink lg:col-span-1"
         />
         <select
-          value={track}
-          onChange={(e) => setTrack(e.target.value)}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
           className="rounded-sm border border-ink/20 bg-parchment-50 px-3 py-2 font-body text-sm text-ink outline-none focus:border-ink"
         >
-          <option value="all">All tracks</option>
-          <option value="major">Psych major</option>
-          <option value="ge">General education</option>
+          <option value="all">All subjects</option>
+          {TRACKS.map((t) => (
+            <optgroup key={t.id} label={t.title}>
+              {SUBJECTS.filter((s) => s.track === t.id).map((s) => (
+                <option key={s.code} value={s.code}>
+                  {s.code} &middot; {s.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
         </select>
         <select
           value={yearLevel}
@@ -96,7 +118,7 @@ export default function BrowsePage() {
           <div className="rounded-sm border border-dashed border-ink/25 px-6 py-16 text-center">
             <p className="font-display text-lg text-ink">Nothing filed here yet.</p>
             <p className="mt-2 font-body text-sm text-ink/60">
-              Be the first to add a resource for this subject.
+              Be the first to add a resource here.
             </p>
           </div>
         ) : (
@@ -108,5 +130,13 @@ export default function BrowsePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function BrowsePage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-6xl px-5 py-14 font-body text-sm text-ink/50">Loading the catalog…</div>}>
+      <BrowseContent />
+    </Suspense>
   );
 }
