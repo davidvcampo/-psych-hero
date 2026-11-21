@@ -9,6 +9,9 @@ import {
   approveResource,
   rejectResource,
   removeResource,
+  restoreResource,
+  subscribeRemovedResources,
+  deleteResourceForever,
 } from "@/lib/firestore";
 import { getResourceFiles } from "@/lib/constants";
 
@@ -16,6 +19,7 @@ export default function AdminPage() {
   const { user, profile, loading } = useAuth();
   const [pending, setPending] = useState([]);
   const [published, setPublished] = useState([]);
+  const [removed, setRemoved] = useState([]);
   const [publishedSearch, setPublishedSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
 
@@ -23,9 +27,11 @@ export default function AdminPage() {
     if (profile?.role !== "moderator") return;
     const unsubPending = subscribePendingResources(setPending);
     const unsubPublished = subscribeApprovedResources(setPublished);
+    const unsubRemoved = subscribeRemovedResources(setRemoved);
     return () => {
       unsubPending();
       unsubPublished();
+      unsubRemoved();
     };
   }, [profile]);
 
@@ -78,6 +84,30 @@ export default function AdminPage() {
     setBusyId(r.id);
     try {
       await removeResource(r.id, r.uploaderUid);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRestore(r) {
+    setBusyId(r.id);
+    try {
+      await restoreResource(r.id, r.uploaderUid);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeleteForever(r, wasPublished) {
+    const ok = window.confirm(
+      `Delete "${r.title}" forever?\n\nThis removes it from the site AND deletes its files from Cloudinary. It cannot be undone.`
+    );
+    if (!ok) return;
+    setBusyId(r.id);
+    try {
+      await deleteResourceForever(r, wasPublished);
+    } catch (err) {
+      window.alert(err.message || "Couldn't delete it. Nothing was changed.");
     } finally {
       setBusyId(null);
     }
@@ -192,13 +222,68 @@ export default function AdminPage() {
                 {getResourceFiles(r).length > 1 ? ` · ${getResourceFiles(r).length} files` : ""}
               </p>
             </div>
-            <button
-              onClick={() => handleRemove(r)}
-              disabled={busyId === r.id}
-              className="rounded-full border border-red-300 px-4 py-1.5 font-body text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
-            >
-              Remove
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRemove(r)}
+                disabled={busyId === r.id}
+                className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs font-medium text-ink hover:border-ink disabled:opacity-60"
+              >
+                Remove
+              </button>
+              <button
+                onClick={() => handleDeleteForever(r, true)}
+                disabled={busyId === r.id}
+                className="rounded-full border border-red-300 px-4 py-1.5 font-body text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+              >
+                Delete forever
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mt-16 font-display text-2xl text-ink">Removed</h2>
+      <p className="mt-2 max-w-xl font-body text-ink/60">
+        Hidden from the site but still stored. Restore one to publish it again, or delete it
+        forever to free up its Cloudinary storage.
+      </p>
+
+      <div className="mt-6 space-y-3">
+        {removed.length === 0 && (
+          <p className="rounded-sm border border-dashed border-ink/25 px-6 py-8 text-center font-body text-sm text-ink/50">
+            Nothing removed.
+          </p>
+        )}
+        {removed.map((r) => (
+          <div
+            key={r.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink/15 bg-parchment-50 px-5 py-4"
+          >
+            <div className="min-w-0">
+              <span className="rounded-sm bg-ink/60 px-2 py-0.5 font-mono text-[11px] text-parchment-100">
+                {r.subjectCode}
+              </span>
+              <p className="mt-2 truncate font-display text-base text-ink">{r.title}</p>
+              <p className="font-body text-xs text-ink/55">
+                {r.resourceType} &middot; {r.yearLevel} &middot; filed by {r.uploaderName}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRestore(r)}
+                disabled={busyId === r.id}
+                className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs font-medium text-ink hover:border-ink disabled:opacity-60"
+              >
+                Restore
+              </button>
+              <button
+                onClick={() => handleDeleteForever(r, false)}
+                disabled={busyId === r.id}
+                className="rounded-full border border-red-300 px-4 py-1.5 font-body text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+              >
+                Delete forever
+              </button>
+            </div>
           </div>
         ))}
       </div>
