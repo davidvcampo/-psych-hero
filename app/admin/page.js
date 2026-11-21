@@ -11,6 +11,7 @@ import {
   removeResource,
   restoreResource,
   subscribeRemovedResources,
+  deleteRemovedResource,
 } from "@/lib/firestore";
 import { getResourceFiles } from "@/lib/constants";
 
@@ -92,6 +93,21 @@ export default function AdminPage() {
     setBusyId(r.id);
     try {
       await restoreResource(r.id, r.uploaderUid);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeleteRecord(r) {
+    const ok = window.confirm(
+      `Delete "${r.title}" from this list for good?\n\nThis can't be undone. The file itself stays in Cloudinary until you delete it there.`
+    );
+    if (!ok) return;
+    setBusyId(r.id);
+    try {
+      await deleteRemovedResource(r.id);
+    } catch (err) {
+      window.alert("Couldn't delete it. Nothing was changed.");
     } finally {
       setBusyId(null);
     }
@@ -221,7 +237,7 @@ export default function AdminPage() {
 
       <h2 className="mt-16 font-display text-2xl text-ink">Removed</h2>
       <p className="mt-2 max-w-xl font-body text-ink/60">
-        Hidden from the site but still stored. Restore one to publish it again.
+        Hidden from the site but still stored. Restore one to publish it again, or delete the record for good. Files stay in Cloudinary until you delete them there.
       </p>
 
       <div className="mt-6 space-y-3">
@@ -251,6 +267,13 @@ export default function AdminPage() {
                 className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs font-medium text-ink hover:border-ink disabled:opacity-60"
               >
                 Restore
+              </button>
+              <button
+                onClick={() => handleDeleteRecord(r)}
+                disabled={busyId === r.id}
+                className="rounded-full border border-red-300 px-4 py-1.5 font-body text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+              >
+                Delete
               </button>
             </div>
           </div>
