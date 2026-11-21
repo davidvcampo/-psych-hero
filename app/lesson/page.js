@@ -81,7 +81,7 @@ function LessonContent() {
                 className="flex items-center justify-between gap-3 rounded-sm border border-ink/15 bg-parchment-50 px-4 py-3 font-body text-sm text-ink hover:border-ink/50"
               >
                 <span className="truncate">{f.name}</span>
-                <span className="shrink-0 text-ink/50">Open</span>
+                <span className="shrink-0 text-ink/50">{f.type === "link" ? "Open in Google Drive" : "Open"}</span>
               </a>
             </li>
           ))}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { submitResource } from "@/lib/firestore";
-import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS, MAX_FILES_PER_LESSON } from "@/lib/constants";
+import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS, MAX_FILES_PER_LESSON, isDriveLink } from "@/lib/constants";
 import { CLOUDINARY_MAX_FILE_BYTES } from "@/lib/cloudinary";
 
 export default function UploadPage() {
@@ -18,6 +18,8 @@ export default function UploadPage() {
   const [resourceType, setResourceType] = useState(RESOURCE_TYPES[0]);
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState([]);
+  const [links, setLinks] = useState([]);
+  const [linkInput, setLinkInput] = useState("");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,8 +51,8 @@ export default function UploadPage() {
     e.preventDefault();
     setError("");
 
-    if (files.length === 0) {
-      setError("Attach at least one file before filing.");
+    if (files.length + links.length === 0) {
+      setError("Attach a file or add a Google Drive link before filing.");
       return;
     }
 
@@ -59,6 +61,7 @@ export default function UploadPage() {
       const subj = SUBJECTS.find((s) => s.code === subjectCode);
       await submitResource({
         files,
+        links,
         title,
         subjectCode,
         subjectName: subj?.name || "",
@@ -97,6 +100,25 @@ export default function UploadPage() {
     setFiles((prev) => [...prev, ...ok.slice(0, Math.max(room, 0))]);
   }
 
+  function addLink() {
+    const url = linkInput.trim();
+    if (!isDriveLink(url)) {
+      setError("That doesn't look like a Google Drive link. It should start with https://drive.google.com/");
+      return;
+    }
+    if (files.length + links.length >= MAX_FILES_PER_LESSON) {
+      setError(`A lesson can hold up to ${MAX_FILES_PER_LESSON} files and links.`);
+      return;
+    }
+    setError("");
+    setLinks((prev) => [...prev, url]);
+    setLinkInput("");
+  }
+
+  function removeLink(index) {
+    setLinks((prev) => prev.filter((_, i) => i !== index));
+  }
+
   function removeFile(index) {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
@@ -133,6 +155,8 @@ export default function UploadPage() {
               setTitle("");
               setNotes("");
               setFiles([]);
+              setLinks([]);
+              setLinkInput("");
             }}
             className="rounded-full border border-ink/25 px-6 py-3 font-body text-sm font-medium text-ink"
           >
@@ -292,6 +316,62 @@ export default function UploadPage() {
                     onClick={() => removeFile(i)}
                     disabled={busy}
                     aria-label={`Remove ${f.name}`}
+                    className="rounded-sm px-1.5 text-ink/60 hover:text-red-700 disabled:opacity-30"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div>
+          <label className="font-body text-sm font-medium text-ink" htmlFor="driveLink">
+            Over 10MB? Add a Google Drive link instead
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              id="driveLink"
+              type="url"
+              value={linkInput}
+              onChange={(e) => setLinkInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addLink();
+                }
+              }}
+              placeholder="https://drive.google.com/file/d/…"
+              className="min-w-0 flex-1 rounded-sm border border-ink/20 bg-parchment-50 px-3 py-2 font-body text-sm text-ink outline-none focus:border-ink"
+            />
+            <button
+              type="button"
+              onClick={addLink}
+              disabled={busy}
+              className="shrink-0 rounded-full border border-ink/25 px-5 py-2 font-body text-sm font-medium text-ink hover:border-ink disabled:opacity-60"
+            >
+              Add link
+            </button>
+          </div>
+          <p className="mt-1 font-body text-xs text-ink/45">
+            In Drive, open the file, tap Share, and set General access to &ldquo;Anyone with the
+            link&rdquo; so other students can open it. Only share materials you&rsquo;re allowed to share.
+          </p>
+
+          {links.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {links.map((url, i) => (
+                <li
+                  key={`${url}-${i}`}
+                  className="flex items-center gap-3 rounded-sm border border-ink/15 bg-parchment-50 px-3 py-2 font-body text-sm text-ink"
+                >
+                  <span className="min-w-0 flex-1 truncate">{url}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeLink(i)}
+                    disabled={busy}
+                    aria-label={`Remove link ${url}`}
                     className="rounded-sm px-1.5 text-ink/60 hover:text-red-700 disabled:opacity-30"
                   >
                     Remove
