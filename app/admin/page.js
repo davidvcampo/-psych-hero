@@ -3,18 +3,30 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
-import { subscribePendingResources, approveResource, rejectResource } from "@/lib/firestore";
+import {
+  subscribePendingResources,
+  subscribeApprovedResources,
+  approveResource,
+  rejectResource,
+  removeResource,
+} from "@/lib/firestore";
 import { getResourceFiles } from "@/lib/constants";
 
 export default function AdminPage() {
   const { user, profile, loading } = useAuth();
   const [pending, setPending] = useState([]);
+  const [published, setPublished] = useState([]);
+  const [publishedSearch, setPublishedSearch] = useState("");
   const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     if (profile?.role !== "moderator") return;
-    const unsub = subscribePendingResources(setPending);
-    return () => unsub();
+    const unsubPending = subscribePendingResources(setPending);
+    const unsubPublished = subscribeApprovedResources(setPublished);
+    return () => {
+      unsubPending();
+      unsubPublished();
+    };
   }, [profile]);
 
   if (loading) {
@@ -57,6 +69,25 @@ export default function AdminPage() {
       setBusyId(null);
     }
   }
+
+  async function handleRemove(r) {
+    const ok = window.confirm(
+      `Remove "${r.title}" from the site? It will disappear from the catalog right away.`
+    );
+    if (!ok) return;
+    setBusyId(r.id);
+    try {
+      await removeResource(r.id, r.uploaderUid);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const publishedShown = published.filter((r) =>
+    `${r.title} ${r.subjectCode} ${r.subjectName} ${r.uploaderName}`
+      .toLowerCase()
+      .includes(publishedSearch.toLowerCase())
+  );
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-14">
@@ -124,6 +155,50 @@ export default function AdminPage() {
                 Reject
               </button>
             </div>
+          </div>
+        ))}
+      </div>
+
+      <h2 className="mt-16 font-display text-2xl text-ink">Published</h2>
+      <p className="mt-2 font-body text-ink/60">
+        {published.length} on the site. Remove anything you don&rsquo;t want there anymore.
+      </p>
+      <input
+        type="text"
+        value={publishedSearch}
+        onChange={(e) => setPublishedSearch(e.target.value)}
+        placeholder="Search published files by title, subject, or name…"
+        className="mt-4 w-full rounded-sm border border-ink/20 bg-parchment-50 px-3 py-2 font-body text-sm text-ink outline-none focus:border-ink"
+      />
+
+      <div className="mt-6 space-y-3">
+        {publishedShown.length === 0 && (
+          <p className="rounded-sm border border-dashed border-ink/25 px-6 py-8 text-center font-body text-sm text-ink/50">
+            Nothing matches.
+          </p>
+        )}
+        {publishedShown.map((r) => (
+          <div
+            key={r.id}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-ink/15 bg-parchment-50 px-5 py-4"
+          >
+            <div className="min-w-0">
+              <span className="rounded-sm bg-ink px-2 py-0.5 font-mono text-[11px] text-parchment-100">
+                {r.subjectCode}
+              </span>
+              <p className="mt-2 truncate font-display text-base text-ink">{r.title}</p>
+              <p className="font-body text-xs text-ink/55">
+                {r.resourceType} &middot; {r.yearLevel} &middot; filed by {r.uploaderName}
+                {getResourceFiles(r).length > 1 ? ` · ${getResourceFiles(r).length} files` : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => handleRemove(r)}
+              disabled={busyId === r.id}
+              className="rounded-full border border-red-300 px-4 py-1.5 font-body text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+            >
+              Remove
+            </button>
           </div>
         ))}
       </div>
