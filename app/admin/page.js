@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { subscribePendingResources, approveResource, rejectResource } from "@/lib/firestore";
+import { getResourceFiles } from "@/lib/constants";
 
 export default function AdminPage() {
   const { user, profile, loading } = useAuth();
@@ -87,14 +88,24 @@ export default function AdminPage() {
                   <p className="mt-2 font-body text-sm italic text-ink/50">&ldquo;{r.notes}&rdquo;</p>
                 )}
               </div>
-              <a
-                href={r.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs text-ink hover:border-ink"
-              >
-                Preview file
-              </a>
+              {getResourceFiles(r).length > 1 ? (
+                <Link
+                  href={`/lesson?id=${r.id}`}
+                  target="_blank"
+                  className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs text-ink hover:border-ink"
+                >
+                  Preview lesson ({getResourceFiles(r).length} files)
+                </Link>
+              ) : (
+                <a
+                  href={r.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-ink/25 px-4 py-1.5 font-body text-xs text-ink hover:border-ink"
+                >
+                  Preview file
+                </a>
+              )}
             </div>
 
             <div className="mt-4 flex gap-3 border-t border-dashed border-ink/15 pt-4">

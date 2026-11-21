@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { submitResource } from "@/lib/firestore";
-import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS } from "@/lib/constants";
+import { SUBJECTS, TRACKS, RESOURCE_TYPES, YEAR_LEVELS, MAX_FILES_PER_LESSON } from "@/lib/constants";
 import { CLOUDINARY_MAX_FILE_BYTES } from "@/lib/cloudinary";
 
 export default function UploadPage() {
@@ -17,7 +17,8 @@ export default function UploadPage() {
   const [yearLevel, setYearLevel] = useState(YEAR_LEVELS[0]);
   const [resourceType, setResourceType] = useState(RESOURCE_TYPES[0]);
   const [notes, setNotes] = useState("");
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -48,12 +49,8 @@ export default function UploadPage() {
     e.preventDefault();
     setError("");
 
-    if (!file) {
-      setError("Attach a file before filing.");
-      return;
-    }
-    if (file.size > CLOUDINARY_MAX_FILE_BYTES) {
-      setError("Keep files under 10MB.");
+    if (files.length === 0) {
+      setError("Attach at least one file before filing.");
       return;
     }
 
@@ -61,7 +58,7 @@ export default function UploadPage() {
     try {
       const subj = SUBJECTS.find((s) => s.code === subjectCode);
       await submitResource({
-        file,
+        files,
         title,
         subjectCode,
         subjectName: subj?.name || "",
@@ -69,13 +66,49 @@ export default function UploadPage() {
         resourceType,
         notes,
         user,
+        onProgress: (n, total) => setProgress(`Uploading ${n} of ${total}…`),
       });
       setDone(true);
     } catch (err) {
       setError("Something went wrong while filing. Try again.");
     } finally {
       setBusy(false);
+      setProgress("");
     }
+  }
+
+  function addFiles(e) {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = ""; // lets the same file be picked again later
+    if (picked.length === 0) return;
+
+    const tooBig = picked.filter((f) => f.size > CLOUDINARY_MAX_FILE_BYTES);
+    const ok = picked.filter((f) => f.size <= CLOUDINARY_MAX_FILE_BYTES);
+    const room = MAX_FILES_PER_LESSON - files.length;
+
+    let message = "";
+    if (tooBig.length > 0) {
+      message = `Skipped ${tooBig.map((f) => f.name).join(", ")} — keep each file under 10MB.`;
+    }
+    if (ok.length > room) {
+      message = `${message} A lesson can hold up to ${MAX_FILES_PER_LESSON} files, so some were left out.`.trim();
+    }
+    setError(message);
+    setFiles((prev) => [...prev, ...ok.slice(0, Math.max(room, 0))]);
+  }
+
+  function removeFile(index) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function moveFile(index, direction) {
+    setFiles((prev) => {
+      const target = index + direction;
+      if (target < 0 || target >= prev.length) return prev;
+      const next = [...prev];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   }
 
   if (done) {
@@ -99,7 +132,7 @@ export default function UploadPage() {
               setDone(false);
               setTitle("");
               setNotes("");
-              setFile(null);
+              setFiles([]);
             }}
             className="rounded-full border border-ink/25 px-6 py-3 font-body text-sm font-medium text-ink"
           >
@@ -210,16 +243,63 @@ export default function UploadPage() {
 
         <div>
           <label className="font-body text-sm font-medium text-ink" htmlFor="file">
-            File
+            Files
           </label>
           <input
             id="file"
             type="file"
-            required
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            multiple
+            onChange={addFiles}
             className="mt-1 w-full rounded-sm border border-dashed border-ink/30 bg-parchment-50 px-3 py-4 font-body text-sm text-ink outline-none file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-1.5 file:font-body file:text-xs file:text-parchment-100"
           />
-          <p className="mt-1 font-body text-xs text-ink/45">PDF, DOCX, or image, up to 10MB.</p>
+          <p className="mt-1 font-body text-xs text-ink/45">
+            PDF, DOCX, or images, up to 10MB each. Add up to {MAX_FILES_PER_LESSON} files and
+            they&rsquo;ll be filed together as one lesson, in the order listed below.
+          </p>
+
+          {files.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {files.map((f, i) => (
+                <li
+                  key={`${f.name}-${i}`}
+                  className="flex items-center gap-3 rounded-sm border border-ink/15 bg-parchment-50 px-3 py-2 font-body text-sm text-ink"
+                >
+                  <span className="w-5 text-right font-mono text-xs text-ink/40">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                  <span className="shrink-0 text-xs text-ink/40">
+                    {(f.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => moveFile(i, -1)}
+                    disabled={i === 0 || busy}
+                    aria-label={`Move ${f.name} up`}
+                    className="rounded-sm px-1.5 text-ink/60 hover:text-ink disabled:opacity-30"
+                  >
+                    &uarr;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveFile(i, 1)}
+                    disabled={i === files.length - 1 || busy}
+                    aria-label={`Move ${f.name} down`}
+                    className="rounded-sm px-1.5 text-ink/60 hover:text-ink disabled:opacity-30"
+                  >
+                    &darr;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(i)}
+                    disabled={busy}
+                    aria-label={`Remove ${f.name}`}
+                    className="rounded-sm px-1.5 text-ink/60 hover:text-red-700 disabled:opacity-30"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {error && (
@@ -231,7 +311,7 @@ export default function UploadPage() {
           disabled={busy}
           className="w-full rounded-full bg-ink px-6 py-3 font-body text-sm font-medium text-parchment-100 transition hover:bg-ink-800 disabled:opacity-60"
         >
-          {busy ? "Filing…" : "File this resource"}
+          {busy ? progress || "Filing…" : "File this resource"}
         </button>
       </form>
     </div>

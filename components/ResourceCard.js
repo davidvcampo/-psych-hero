@@ -1,15 +1,23 @@
 "use client";
 
+import Link from "next/link";
+import { getResourceFiles } from "@/lib/constants";
+
 export default function ResourceCard({ resource }) {
   const posted = resource.createdAt?.toDate
     ? resource.createdAt.toDate().toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
     : "";
 
+  const fileCount = getResourceFiles(resource).length;
+  const isLesson = fileCount > 1;
+  const Wrapper = isLesson ? Link : "a";
+  const wrapperProps = isLesson
+    ? { href: `/lesson?id=${resource.id}` }
+    : { href: resource.fileUrl, target: "_blank", rel: "noopener noreferrer" };
+
   return (
-    <a
-      href={resource.fileUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Wrapper
+      {...wrapperProps}
       className="group relative block rounded-sm border border-ink/15 bg-parchment-50 p-5 shadow-[3px_3px_0_0_rgba(27,46,92,0.12)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_0_rgba(27,42,74,0.18)]"
     >
       {/* punch hole, catalog-card signature */}
@@ -29,9 +37,12 @@ export default function ResourceCard({ resource }) {
       <p className="mt-1 pl-4 font-body text-sm text-ink/60">{resource.subjectName}</p>
 
       <div className="mt-4 flex items-center justify-between border-t border-dashed border-ink/20 pl-4 pt-3 font-body text-xs text-ink/50">
-        <span>{resource.yearLevel}</span>
+        <span>
+          {resource.yearLevel}
+          {isLesson ? ` · ${fileCount} files` : ""}
+        </span>
         <span>Filed by {resource.uploaderName}{posted ? ` · ${posted}` : ""}</span>
       </div>
-    </a>
+    </Wrapper>
   );
 }
